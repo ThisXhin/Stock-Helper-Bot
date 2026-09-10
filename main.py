@@ -239,7 +239,6 @@ async def on_message(message):
     if resolved_items:
         formatted = ", ".join(resolved_items)
         ping_command = "?stockping " + formatted + " in stock!"
-        await message.channel.send("**" + formatted + "**\n\n**Copy this to ping Circle bot:**\n`" + ping_command + "`")
     else:
         await message.channel.send("No valid items found. Try `!s help`.")
 
