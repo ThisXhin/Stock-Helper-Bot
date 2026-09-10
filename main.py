@@ -245,7 +245,7 @@ async def on_message(message):
 
     # Bullet list formatting
     bullet_list = "\n".join(["• **" + item + "**" for item in items])
-    ping_message = role_mention + "**Items in stock:**\n" + bullet_list
+    ping_message = role_mention + "Items in stock:\n" + bullet_list
 
     # Send clean ping to stock channel
     target_channel = client.get_channel(STOCK_CHANNEL_ID)
