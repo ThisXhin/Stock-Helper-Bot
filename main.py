@@ -253,43 +253,55 @@ ITEM_MAP = {
 
 # ---------- HELP COMMAND ----------
 @client.event
-async def on_ready():
-    print(f"✅ Bot is online as {client.user}")
-
-# ---------- MESSAGE HANDLER ----------
-@client.event
 async def on_message(message):
     if message.author.bot:
         return
 
+    # Detect which prefix was used
+    content_lower = message.content.lower()
+    use_short = content_lower.startswith("!s ")
+    use_long = content_lower.startswith("?stockping ")
+
     # ----- HELP COMMAND -----
-    if message.content.lower() == "!s help":
-        lines = ["📦 **Stock Shortcuts:**"]
+    if content_lower == "!s help" or content_lower == "?stockping help":
+        if content_lower == "!s help":
+            prefix = "!s"
+            ping_note = "🔇 Silent (no @everyone)"
+        else:
+            prefix = "?stockping"
+            ping_note = "📢 Pings @everyone"
+
+        lines = [f"📦 **Stock Shortcuts** ({ping_note}):"]
         if ITEM_MAP:
             for shortcut, full_name in sorted(ITEM_MAP.items()):
-                lines.append(f"`!s {shortcut}` → {full_name}")
+                lines.append(f"`{prefix} {shortcut}` → {full_name}")
         else:
             lines.append("_No shortcuts set yet._")
-        lines.append("\n💡 **Or just type the item name!**")
-        lines.append("Example: `!s bamboo` → finds Bamboo I, II, or Fence")
+        lines.append(f"\n💡 **Or just type the item name!**")
+        lines.append(f"Example: `{prefix} bamboo` → finds Bamboo I, II, or Fence")
         await message.channel.send("\n".join(lines))
         return
 
     # ----- STOCK COMMAND -----
-    if message.content.lower().startswith("!s "):
-        raw = message.content[3:].strip()
+    if use_short or use_long:
+        # Get the command text without the prefix
+        if use_short:
+            raw = message.content[3:].strip()  # remove "!s "
+            should_ping = False  # 🔇 Silent for !s
+        else:
+            raw = message.content[len("?stockping "):].strip()  # remove "?stockping "
+            should_ping = True   # 📢 Ping for ?stockping
+
         if not raw:
-            await message.channel.send("Please type an item! Example: `!s bamboo`")
+            await message.channel.send(f"Please type an item! Example: `!s bamboo` (silent) or `?stockping bamboo` (ping)")
             return
 
         # Split by commas OR spaces
         codes = [x.strip().lower() for x in raw.replace(",", " ").split() if x.strip()]
 
-        # We'll process each code one by one, but they all go in one ping.
-        # We'll resolve each code to an item name.
         resolved_items = []
         unknown_terms = []
-        ambiguous_terms = {}  # term -> list of matches
+        ambiguous_terms = {}
 
         for code in codes:
             # 1. Check if it's a shortcut
@@ -309,16 +321,12 @@ async def on_message(message):
 
         # If there are ambiguous terms, ask the user to choose
         if ambiguous_terms:
-            # We'll handle only the first ambiguous term for simplicity (or combine)
-            # But we can only ask one question at a time.
-            # Better: notify them and ask to be more specific.
             for term, matches in ambiguous_terms.items():
-                match_list = "\n".join([f"{i+1}. {m}" for i, m in enumerate(matches[:10])])  # max 10
+                match_list = "\n".join([f"{i+1}. {m}" for i, m in enumerate(matches[:10])])
                 await message.channel.send(
                     f"🔍 Multiple matches for `{term}`:\n{match_list}\n"
-                    f"Please type `!s {term} <number>` or be more specific."
+                    f"Please type `!s {term} <number>` or `?stockping {term} <number>`, or be more specific."
                 )
-            # Stop here – don't ping yet
             return
 
         # If there are unknown terms, suggest close matches
@@ -333,12 +341,17 @@ async def on_message(message):
             await message.channel.send("❌ Unknown items:\n" + "\n".join(suggestions))
             return
 
-        # If we got here, all items are resolved
+        # If we got here, all items are resolved – send the reply!
         if resolved_items:
             formatted = ", ".join(resolved_items)
-            await message.channel.send(f"@everyone **{formatted}** is now in stock!")
+            # 🎯 The MAGIC LINE: Only include @everyone if should_ping is True
+            if should_ping:
+                reply = f"@everyone **{formatted}** is now in stock!"
+            else:
+                reply = f"🔇 **{formatted}** is now in stock! (Silent test)"
+            await message.channel.send(reply)
         else:
-            await message.channel.send("No valid items found. Try `!s help`.")
+            await message.channel.send("No valid items found. Try `!s help` or `?stockping help`.")
 
 # ---------- RUN THE BOT ----------
 client.run(os.getenv("DISCORD_TOKEN"))
