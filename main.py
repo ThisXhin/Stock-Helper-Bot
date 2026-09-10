@@ -1,5 +1,6 @@
 import discord
 import os
+import time
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -8,6 +9,10 @@ client = discord.Client(intents=intents)
 
 STOCK_ROLE_NAME = "Stock Ping"
 STOCK_CHANNEL_ID = 1545233041293578421
+COOLDOWN_SECONDS = 60
+
+# GLOBAL cooldown - shared across all helpers
+last_ping_time = 0
 
 
 class HelpPaginator(discord.ui.View):
@@ -160,6 +165,8 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
+    global last_ping_time
+
     if message.author.bot:
         return
 
@@ -169,7 +176,7 @@ async def on_message(message):
     if not content_lower.startswith("!s "):
         return
 
-    # HELP COMMAND (replies in the same channel)
+    # HELP COMMAND (no cooldown)
     if content_lower.startswith("!s help"):
         prefix = "!s"
 
@@ -193,6 +200,14 @@ async def on_message(message):
 
         view = HelpPaginator(pages, message.author.id)
         await message.channel.send(pages[0], view=view)
+        return
+
+    # GLOBAL COOLDOWN CHECK
+    now = time.time()
+    remaining = COOLDOWN_SECONDS - (now - last_ping_time)
+
+    if remaining > 0:
+        await message.channel.send("⏳ Someone just pinged! Please wait **" + str(int(remaining) + 1) + "s** before pinging again.")
         return
 
     # STOCK PING
@@ -221,6 +236,9 @@ async def on_message(message):
         await message.channel.send("No valid items found. Try `!s help`.")
         return
 
+    # Register the global cooldown
+    last_ping_time = now
+
     # Find the stock role
     role_mention = ""
     if message.guild:
@@ -242,7 +260,6 @@ async def on_message(message):
     if target_channel:
         await target_channel.send(reply)
 
-        # If the command was run in a different channel, confirm here
         if target_channel.id != message.channel.id:
             await message.channel.send("✅ Posted in <#" + str(STOCK_CHANNEL_ID) + ">")
     else:
