@@ -165,13 +165,11 @@ async def on_message(message):
     content_lower = content.lower()
 
     # HELP COMMAND
-    if content_lower.startswith("!s help") or content_lower.startswith("?stockping help"):
-        if content_lower.startswith("!s"):
-            prefix = "!s"
-            note = "Silent - no @everyone"
-        else:
-            prefix = "?stockping"
-            note = "Announcement - pings @everyone"
+if content_lower.startswith("!s help") or content_lower.startswith("?stockping help"):
+    if content_lower.startswith("!s"):
+        prefix = "!s"
+    else:
+        prefix = "?stockping"
 
         shortcut_lines = []
         for shortcut, full_name in sorted(ITEM_MAP.items()):
