@@ -126,10 +126,10 @@ async def on_message(message):
 
     content = message.content.strip()
     content_lower = content.lower()
-    help_check = content_lower.rstrip(".!?,;:")
 
-    if help_check == "!s help" or help_check == "?stockping help":
-        if help_check.startswith("!s"):
+    # HELP – check FIRST
+    if content_lower.startswith("!s help") or content_lower.startswith("?stockping help"):
+        if content_lower.startswith("!s"):
             prefix = "!s"
             note = "No ping"
         else:
@@ -144,6 +144,7 @@ async def on_message(message):
         await message.channel.send("\n".join(lines))
         return
 
+    # STOCK – check after help
     if content_lower.startswith("!s "):
         raw = content[3:].strip()
         should_ping = False
@@ -152,6 +153,8 @@ async def on_message(message):
         should_ping = True
     else:
         return
+
+    # ... rest of your code unchanged
 
     if not raw:
         await message.channel.send("Please type an item! Example: `!s bamboo`")
