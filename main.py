@@ -1,11 +1,12 @@
 import discord
 import os
-import difflib
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
+
+STOCK_ROLE_NAME = "Stock Ping"
 
 
 class HelpPaginator(discord.ui.View):
@@ -164,16 +165,11 @@ async def on_message(message):
     content = message.content.strip()
     content_lower = content.lower()
 
-    print("DEBUG: Got message: " + repr(content))
-
     if not content_lower.startswith("!s "):
         return
 
-    print("DEBUG: Passed prefix check")
-
     # HELP COMMAND
     if content_lower.startswith("!s help"):
-        print("DEBUG: Help command triggered")
         prefix = "!s"
 
         shortcut_lines = []
@@ -192,22 +188,20 @@ async def on_message(message):
             pages.append(header + "\n".join(chunk))
 
         if pages:
-            pages[-1] = pages[-1] + "\n\n__**Examples:**__\n`!s b1` = " + ITEM_MAP["b1"] + "\n`!s b1, b2, t1` = multiple items\n\nYou can also type part of the name: `!s bamboo`"
+            pages[-1] = pages[-1] + "\n\n__**Examples:**__\n`!s b1` = " + ITEM_MAP["b1"] + "\n`!s b1, b2, t1` = multiple items"
 
         view = HelpPaginator(pages, message.author.id)
         await message.channel.send(pages[0], view=view)
         return
 
-    # STOCK PREVIEW
+    # STOCK PING
     raw = content[3:].strip()
-    print("DEBUG: raw = " + repr(raw))
 
     if not raw:
         await message.channel.send("Type shortcuts after `!s`. Example: `!s b1 b2`")
         return
 
     codes = [x.strip().lower() for x in raw.replace(",", " ").split() if x.strip()]
-    print("DEBUG: codes = " + str(codes))
 
     items = []
     unknown = []
@@ -215,31 +209,32 @@ async def on_message(message):
     for code in codes:
         if code in ITEM_MAP:
             items.append(ITEM_MAP[code])
-            print("DEBUG: Found " + code + " = " + ITEM_MAP[code])
         else:
             matches = [item for item in ALL_ITEMS if code in item.lower()]
             if len(matches) == 1:
                 items.append(matches[0])
-                print("DEBUG: Partial match " + code + " = " + matches[0])
             else:
                 unknown.append(code)
-                print("DEBUG: Unknown " + code + " (matches=" + str(len(matches)) + ")")
-
-    print("DEBUG: items = " + str(items))
-    print("DEBUG: unknown = " + str(unknown))
 
     if not items:
         await message.channel.send("No valid items found. Try `!s help`.")
         return
 
+    # Find the stock role in the server
+    role_mention = ""
+    if message.guild:
+        role = discord.utils.get(message.guild.roles, name=STOCK_ROLE_NAME)
+        if role:
+            role_mention = role.mention + " "
+        else:
+            role_mention = "@" + STOCK_ROLE_NAME + " (role not found!) "
+
     formatted = ", ".join(items)
-    ping_line = "?stockping " + formatted + " in stock!"
-    reply = "`" + ping_line + "`"
+    reply = role_mention + "**" + formatted + "** in stock!"
 
     if unknown:
         reply = reply + "\n\n_Ignored unknown: " + ", ".join(unknown) + "_"
 
-    print("DEBUG: Sending reply: " + reply)
     await message.channel.send(reply)
 
 
