@@ -164,11 +164,16 @@ async def on_message(message):
     content = message.content.strip()
     content_lower = content.lower()
 
+    print("DEBUG: Got message: " + repr(content))
+
     if not content_lower.startswith("!s "):
         return
 
-    # HELP COMMAND with pagination
+    print("DEBUG: Passed prefix check")
+
+    # HELP COMMAND
     if content_lower.startswith("!s help"):
+        print("DEBUG: Help command triggered")
         prefix = "!s"
 
         shortcut_lines = []
@@ -193,14 +198,16 @@ async def on_message(message):
         await message.channel.send(pages[0], view=view)
         return
 
-    # STOCK PREVIEW - single message
+    # STOCK PREVIEW
     raw = content[3:].strip()
+    print("DEBUG: raw = " + repr(raw))
 
     if not raw:
         await message.channel.send("Type shortcuts after `!s`. Example: `!s b1 b2`")
         return
 
     codes = [x.strip().lower() for x in raw.replace(",", " ").split() if x.strip()]
+    print("DEBUG: codes = " + str(codes))
 
     items = []
     unknown = []
@@ -208,25 +215,32 @@ async def on_message(message):
     for code in codes:
         if code in ITEM_MAP:
             items.append(ITEM_MAP[code])
+            print("DEBUG: Found " + code + " = " + ITEM_MAP[code])
         else:
             matches = [item for item in ALL_ITEMS if code in item.lower()]
             if len(matches) == 1:
                 items.append(matches[0])
+                print("DEBUG: Partial match " + code + " = " + matches[0])
             else:
                 unknown.append(code)
+                print("DEBUG: Unknown " + code + " (matches=" + str(len(matches)) + ")")
+
+    print("DEBUG: items = " + str(items))
+    print("DEBUG: unknown = " + str(unknown))
 
     if not items:
         await message.channel.send("No valid items found. Try `!s help`.")
         return
 
-        formatted = ", ".join(items)
+    formatted = ", ".join(items)
     ping_line = "?stockping " + formatted + " in stock!"
-
     reply = "`" + ping_line + "`"
 
     if unknown:
         reply = reply + "\n\n_Ignored unknown: " + ", ".join(unknown) + "_"
 
+    print("DEBUG: Sending reply: " + reply)
     await message.channel.send(reply)
+
 
 client.run(os.getenv("DISCORD_TOKEN"))
