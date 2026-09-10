@@ -348,7 +348,7 @@ async def on_message(message):
             if should_ping:
                 reply = f"@everyone **{formatted}** is now in stock!"
             else:
-                reply = f"🔇 **{formatted}** is now in stock! (Silent test)"
+                reply = f"**{formatted}** is now in stock!"
             await message.channel.send(reply)
         else:
             await message.channel.send("No valid items found. Try `!s help` or `?stockping help`.")
