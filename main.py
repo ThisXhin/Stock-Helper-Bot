@@ -164,12 +164,13 @@ async def on_message(message):
     content = message.content.strip()
     content_lower = content.lower()
 
+    # ONLY respond to messages starting with "!s "
+    if not content_lower.startswith("!s "):
+        return
+
     # HELP COMMAND
-    if content_lower.startswith("!s help") or content_lower.startswith("?stockping help"):
-        if content_lower.startswith("!s"):
-            prefix = "!s"
-        else:
-            prefix = "?stockping"
+    if content_lower.startswith("!s help"):
+        prefix = "!s"
 
         shortcut_lines = []
         for shortcut, full_name in sorted(ITEM_MAP.items()):
@@ -193,15 +194,8 @@ async def on_message(message):
         await message.channel.send(pages[0], view=view)
         return
 
-    # STOCK COMMAND
-    if content_lower.startswith("!s "):
-        raw = content[3:].strip()
-        should_ping = False
-    elif content_lower.startswith("?stockping "):
-        raw = content[len("?stockping "):].strip()
-        should_ping = True
-    else:
-        return
+    # STOCK PREVIEW COMMAND
+    raw = content[3:].strip()
 
     if not raw:
         await message.channel.send("Please type an item! Example: `!s bamboo`")
@@ -244,12 +238,10 @@ async def on_message(message):
 
     if resolved_items:
         formatted = ", ".join(resolved_items)
-        if should_ping:
-            await message.channel.send("@everyone **" + formatted + "** is now in stock!")
-        else:
-            await message.channel.send("**" + formatted + "** is now in stock!")
+        ping_command = "?stockping " + formatted + " in stock!"
+        await message.channel.send("**" + formatted + "**\n\n📋 **Copy this to ping Circle bot:**\n`" + ping_command + "`")
     else:
-        await message.channel.send("No valid items found. Try `!s help` or `?stockping help`.")
+        await message.channel.send("No valid items found. Try `!s help`.")
 
 
 client.run(os.getenv("DISCORD_TOKEN"))
