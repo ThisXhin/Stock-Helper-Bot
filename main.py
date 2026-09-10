@@ -7,6 +7,7 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 STOCK_ROLE_NAME = "Stock Ping"
+STOCK_CHANNEL_ID = 1545233041293578421
 
 
 class HelpPaginator(discord.ui.View):
@@ -168,7 +169,7 @@ async def on_message(message):
     if not content_lower.startswith("!s "):
         return
 
-    # HELP COMMAND
+    # HELP COMMAND (replies in the same channel)
     if content_lower.startswith("!s help"):
         prefix = "!s"
 
@@ -220,7 +221,7 @@ async def on_message(message):
         await message.channel.send("No valid items found. Try `!s help`.")
         return
 
-    # Find the stock role in the server
+    # Find the stock role
     role_mention = ""
     if message.guild:
         role = discord.utils.get(message.guild.roles, name=STOCK_ROLE_NAME)
@@ -235,7 +236,17 @@ async def on_message(message):
     if unknown:
         reply = reply + "\n\n_Ignored unknown: " + ", ".join(unknown) + "_"
 
-    await message.channel.send(reply)
+    # Send ping to stock channel
+    target_channel = client.get_channel(STOCK_CHANNEL_ID)
+
+    if target_channel:
+        await target_channel.send(reply)
+
+        # If the command was run in a different channel, confirm here
+        if target_channel.id != message.channel.id:
+            await message.channel.send("✅ Posted in <#" + str(STOCK_CHANNEL_ID) + ">")
+    else:
+        await message.channel.send("⚠️ Stock channel not found. Check STOCK_CHANNEL_ID.\n\n" + reply)
 
 
 client.run(os.getenv("DISCORD_TOKEN"))
