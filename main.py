@@ -11,7 +11,6 @@ STOCK_ROLE_NAME = "Stock Ping"
 STOCK_CHANNEL_ID = 1545233041293578421
 COOLDOWN_SECONDS = 60
 
-# GLOBAL cooldown - shared across all helpers
 last_ping_time = 0
 
 
@@ -176,7 +175,7 @@ async def on_message(message):
     if not content_lower.startswith("!s "):
         return
 
-    # HELP COMMAND (no cooldown)
+    # HELP COMMAND
     if content_lower.startswith("!s help"):
         prefix = "!s"
 
@@ -202,7 +201,7 @@ async def on_message(message):
         await message.channel.send(pages[0], view=view)
         return
 
-    # GLOBAL COOLDOWN CHECK
+    # GLOBAL COOLDOWN
     now = time.time()
     remaining = COOLDOWN_SECONDS - (now - last_ping_time)
 
@@ -220,7 +219,6 @@ async def on_message(message):
     codes = [x.strip().lower() for x in raw.replace(",", " ").split() if x.strip()]
 
     items = []
-    unknown = []
 
     for code in codes:
         if code in ITEM_MAP:
@@ -229,17 +227,15 @@ async def on_message(message):
             matches = [item for item in ALL_ITEMS if code in item.lower()]
             if len(matches) == 1:
                 items.append(matches[0])
-            else:
-                unknown.append(code)
+            # If no match or multiple matches, silently skip
 
     if not items:
         await message.channel.send("No valid items found. Try `!s help`.")
         return
 
-    # Register the global cooldown
     last_ping_time = now
 
-    # Find the stock role
+    # Role mention
     role_mention = ""
     if message.guild:
         role = discord.utils.get(message.guild.roles, name=STOCK_ROLE_NAME)
@@ -249,21 +245,18 @@ async def on_message(message):
             role_mention = "@" + STOCK_ROLE_NAME + " (role not found!) "
 
     formatted = ", ".join(items)
-    reply = role_mention + "**" + formatted + "** in stock!"
+    ping_message = role_mention + "**" + formatted + "** in stock!"
 
-    if unknown:
-        reply = reply + "\n\n_Ignored unknown: " + ", ".join(unknown) + "_"
-
-    # Send ping to stock channel
+    # Send clean ping to stock channel
     target_channel = client.get_channel(STOCK_CHANNEL_ID)
 
     if target_channel:
-        await target_channel.send(reply)
+        await target_channel.send(ping_message)
 
         if target_channel.id != message.channel.id:
             await message.channel.send("✅ Posted in <#" + str(STOCK_CHANNEL_ID) + ">")
     else:
-        await message.channel.send("⚠️ Stock channel not found. Check STOCK_CHANNEL_ID.\n\n" + reply)
+        await message.channel.send("⚠️ Stock channel not found. Check STOCK_CHANNEL_ID.")
 
 
 client.run(os.getenv("DISCORD_TOKEN"))
