@@ -9,7 +9,7 @@ client = discord.Client(intents=intents)
 
 STOCK_ROLE_NAME = "Stock Ping"
 STOCK_CHANNEL_ID = 1545233041293578421
-COOLDOWN_SECONDS = 60
+COOLDOWN_SECONDS = 30
 
 last_ping_time = 0
 
