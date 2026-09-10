@@ -227,7 +227,6 @@ async def on_message(message):
             matches = [item for item in ALL_ITEMS if code in item.lower()]
             if len(matches) == 1:
                 items.append(matches[0])
-            # If no match or multiple matches, silently skip
 
     if not items:
         await message.channel.send("No valid items found. Try `!s help`.")
@@ -244,8 +243,9 @@ async def on_message(message):
         else:
             role_mention = "@" + STOCK_ROLE_NAME + " (role not found!) "
 
-    formatted = ", ".join(items)
-    ping_message = role_mention + "**" + formatted + "** in stock!"
+    # Bullet list formatting
+    bullet_list = "\n".join(["• **" + item + "**" for item in items])
+    ping_message = role_mention + "**Items in stock:**\n" + bullet_list
 
     # Send clean ping to stock channel
     target_channel = client.get_channel(STOCK_CHANNEL_ID)
