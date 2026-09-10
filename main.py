@@ -7,6 +7,43 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
+
+class HelpPaginator(discord.ui.View):
+    def __init__(self, pages, author_id):
+        super().__init__(timeout=180)
+        self.pages = pages
+        self.current = 0
+        self.author_id = author_id
+        self.update_buttons()
+
+    def update_buttons(self):
+        self.prev_button.disabled = self.current == 0
+        self.next_button.disabled = self.current >= len(self.pages) - 1
+        self.page_label.label = "Page " + str(self.current + 1) + "/" + str(len(self.pages))
+
+    async def interaction_check(self, interaction):
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message("Only the person who ran the command can use these buttons.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.secondary)
+    async def prev_button(self, interaction, button):
+        self.current -= 1
+        self.update_buttons()
+        await interaction.response.edit_message(content=self.pages[self.current], view=self)
+
+    @discord.ui.button(label="Page 1/1", style=discord.ButtonStyle.primary, disabled=True)
+    async def page_label(self, interaction, button):
+        pass
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.secondary)
+    async def next_button(self, interaction, button):
+        self.current += 1
+        self.update_buttons()
+        await interaction.response.edit_message(content=self.pages[self.current], view=self)
+
+
 ALL_ITEMS = [
     "Aquarium (L)", "Autumn Tree (R)", "Bamboo I (U)", "Bamboo II (U)",
     "Bamboo Fence", "Bench (U)", "Black Drawer (R)", "Black Frame Bed (R)",
@@ -127,7 +164,7 @@ async def on_message(message):
     content = message.content.strip()
     content_lower = content.lower()
 
-    # HELP COMMAND - FIRST CHECK
+    # HELP COMMAND
     if content_lower.startswith("!s help") or content_lower.startswith("?stockping help"):
         if content_lower.startswith("!s"):
             prefix = "!s"
@@ -136,18 +173,26 @@ async def on_message(message):
             prefix = "?stockping"
             note = "Announcement - pings @everyone"
 
-        lines = ["**STOCK SHORTCUTS** (" + note + ")"]
-        lines.append("")
-        lines.append("__**All Shortcuts:**__")
+        shortcut_lines = []
         for shortcut, full_name in sorted(ITEM_MAP.items()):
-            lines.append("`" + prefix + " " + shortcut + "`  =  " + full_name)
-        lines.append("")
-        lines.append("__**Examples:**__")
-        lines.append("`" + prefix + " b1` = " + ITEM_MAP["b1"])
-        lines.append("`" + prefix + " b1, b2, t1` = multiple items")
-        lines.append("")
-        lines.append("You can also type part of the name: `" + prefix + " bamboo`")
-        await message.channel.send("\n".join(lines))
+            shortcut_lines.append("`" + prefix + " " + shortcut + "` = " + full_name)
+
+        per_page = 15
+        chunks = []
+        for i in range(0, len(shortcut_lines), per_page):
+            chunks.append(shortcut_lines[i:i + per_page])
+
+        total = len(chunks)
+        pages = []
+        for idx, chunk in enumerate(chunks):
+            header = "**STOCK SHORTCUTS** (" + note + ")\n*Page " + str(idx + 1) + " of " + str(total) + "*\n\n"
+            pages.append(header + "\n".join(chunk))
+
+        if pages:
+            pages[-1] = pages[-1] + "\n\n__**Examples:**__\n`" + prefix + " b1` = " + ITEM_MAP["b1"] + "\n`" + prefix + " b1, b2, t1` = multiple items\n\nYou can also type part of the name: `" + prefix + " bamboo`"
+
+        view = HelpPaginator(pages, message.author.id)
+        await message.channel.send(pages[0], view=view)
         return
 
     # STOCK COMMAND
