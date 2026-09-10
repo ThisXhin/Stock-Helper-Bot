@@ -1,5 +1,4 @@
 import discord
-import discord
 import os
 import difflib
 
@@ -117,7 +116,7 @@ ITEM_MAP = {
 
 @client.event
 async def on_ready():
-    print(f"Bot is online as {client.user}")
+    print("Bot is online as " + str(client.user))
 
 
 @client.event
@@ -127,21 +126,21 @@ async def on_message(message):
 
     content = message.content.strip()
     content_lower = content.lower()
-
     help_check = content_lower.rstrip(".!?,;:")
-    if help_check in ("!s help", "?stockping help"):
+
+    if help_check == "!s help" or help_check == "?stockping help":
         if help_check.startswith("!s"):
             prefix = "!s"
-            ping_note = "No @everyone"
+            note = "No ping"
         else:
             prefix = "?stockping"
-            ping_note = "Pings @everyone"
+            note = "Pings everyone"
 
-        lines = [f"Stock Shortcuts ({ping_note}):"]
+        lines = ["Stock Shortcuts (" + note + "):"]
         for shortcut, full_name in sorted(ITEM_MAP.items()):
-            lines.append(f"`{prefix} {shortcut}` = {full_name}")
+            lines.append("`" + prefix + " " + shortcut + "` = " + full_name)
         lines.append("")
-        lines.append("Or type the item name! Example: `" + prefix + " bamboo`")
+        lines.append("Or type the item name directly!")
         await message.channel.send("\n".join(lines))
         return
 
@@ -178,10 +177,8 @@ async def on_message(message):
 
     if ambiguous_terms:
         for term, matches in ambiguous_terms.items():
-            match_list = "\n".join([f"{i+1}. {m}" for i, m in enumerate(matches[:10])])
-            await message.channel.send(
-                f"Multiple matches for `{term}`:\n{match_list}\nPlease be more specific."
-            )
+            match_list = "\n".join([str(i + 1) + ". " + m for i, m in enumerate(matches[:10])])
+            await message.channel.send("Multiple matches for `" + term + "`:\n" + match_list + "\nPlease be more specific.")
         return
 
     if unknown_terms:
@@ -189,20 +186,20 @@ async def on_message(message):
         for term in unknown_terms:
             close = difflib.get_close_matches(term, ALL_ITEMS, n=3, cutoff=0.6)
             if close:
-                suggestions.append(f"`{term}` - Did you mean `{close[0]}`?")
+                suggestions.append("`" + term + "` - Did you mean `" + close[0] + "`?")
             else:
-                suggestions.append(f"`{term}` - No match found.")
+                suggestions.append("`" + term + "` - No match found.")
         await message.channel.send("Unknown items:\n" + "\n".join(suggestions))
         return
 
     if resolved_items:
         formatted = ", ".join(resolved_items)
         if should_ping:
-            await message.channel.send(f"@everyone **{formatted}** is now in stock!")
+            await message.channel.send("@everyone **" + formatted + "** is now in stock!")
         else:
-            await message.channel.send(f"**{formatted}** is now in stock!")
-        else:
+            await message.channel.send("**" + formatted + "** is now in stock!")
+    else:
         await message.channel.send("No valid items found. Try `!s help` or `?stockping help`.")
 
-# ---------- RUN THE BOT ----------
+
 client.run(os.getenv("DISCORD_TOKEN"))
