@@ -165,11 +165,11 @@ async def on_message(message):
     content_lower = content.lower()
 
     # HELP COMMAND
-if content_lower.startswith("!s help") or content_lower.startswith("?stockping help"):
-    if content_lower.startswith("!s"):
-        prefix = "!s"
-    else:
-        prefix = "?stockping"
+    if content_lower.startswith("!s help") or content_lower.startswith("?stockping help"):
+        if content_lower.startswith("!s"):
+            prefix = "!s"
+        else:
+            prefix = "?stockping"
 
         shortcut_lines = []
         for shortcut, full_name in sorted(ITEM_MAP.items()):
@@ -183,7 +183,7 @@ if content_lower.startswith("!s help") or content_lower.startswith("?stockping h
         total = len(chunks)
         pages = []
         for idx, chunk in enumerate(chunks):
-            header = "**STOCK SHORTCUTS** (" + note + ")\n*Page " + str(idx + 1) + " of " + str(total) + "*\n\n"
+            header = "**STOCK SHORTCUTS**\n*Page " + str(idx + 1) + " of " + str(total) + "*\n\n"
             pages.append(header + "\n".join(chunk))
 
         if pages:
