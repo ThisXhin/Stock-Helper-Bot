@@ -164,11 +164,10 @@ async def on_message(message):
     content = message.content.strip()
     content_lower = content.lower()
 
-    # ONLY respond to messages starting with "!s "
     if not content_lower.startswith("!s "):
         return
 
-    # HELP COMMAND
+    # HELP COMMAND with pagination
     if content_lower.startswith("!s help"):
         prefix = "!s"
 
@@ -188,59 +187,46 @@ async def on_message(message):
             pages.append(header + "\n".join(chunk))
 
         if pages:
-            pages[-1] = pages[-1] + "\n\n__**Examples:**__\n`" + prefix + " b1` = " + ITEM_MAP["b1"] + "\n`" + prefix + " b1, b2, t1` = multiple items\n\nYou can also type part of the name: `" + prefix + " bamboo`"
+            pages[-1] = pages[-1] + "\n\n__**Examples:**__\n`!s b1` = " + ITEM_MAP["b1"] + "\n`!s b1, b2, t1` = multiple items\n\nYou can also type part of the name: `!s bamboo`"
 
         view = HelpPaginator(pages, message.author.id)
         await message.channel.send(pages[0], view=view)
         return
 
-    # STOCK PREVIEW COMMAND
+    # STOCK PREVIEW - single message
     raw = content[3:].strip()
 
     if not raw:
-        await message.channel.send("Please type an item! Example: `!s bamboo`")
+        await message.channel.send("Type shortcuts after `!s`. Example: `!s b1 b2`")
         return
 
     codes = [x.strip().lower() for x in raw.replace(",", " ").split() if x.strip()]
 
-    resolved_items = []
-    unknown_terms = []
-    ambiguous_terms = {}
+    items = []
+    unknown = []
 
     for code in codes:
         if code in ITEM_MAP:
-            resolved_items.append(ITEM_MAP[code])
-            continue
-        matches = [item for item in ALL_ITEMS if code in item.lower()]
-        if len(matches) == 1:
-            resolved_items.append(matches[0])
-        elif len(matches) > 1:
-            ambiguous_terms[code] = matches
+            items.append(ITEM_MAP[code])
         else:
-            unknown_terms.append(code)
-
-    if ambiguous_terms:
-        for term, matches in ambiguous_terms.items():
-            match_list = "\n".join([str(i + 1) + ". " + m for i, m in enumerate(matches[:10])])
-            await message.channel.send("Multiple matches for `" + term + "`:\n" + match_list + "\nPlease be more specific.")
-        return
-
-    if unknown_terms:
-        suggestions = []
-        for term in unknown_terms:
-            close = difflib.get_close_matches(term, ALL_ITEMS, n=3, cutoff=0.6)
-            if close:
-                suggestions.append("`" + term + "` - Did you mean `" + close[0] + "`?")
+            matches = [item for item in ALL_ITEMS if code in item.lower()]
+            if len(matches) == 1:
+                items.append(matches[0])
             else:
-                suggestions.append("`" + term + "` - No match found.")
-        await message.channel.send("Unknown items:\n" + "\n".join(suggestions))
+                unknown.append(code)
+
+    if not items:
+        await message.channel.send("No valid items found. Try `!s help`.")
         return
 
-    if resolved_items:
-        formatted = ", ".join(resolved_items)
-        ping_command = "?stockping " + formatted + " in stock!"
-    else:
-        await message.channel.send("No valid items found. Try `!s help`.")
+        formatted = ", ".join(items)
+    ping_line = "?stockping " + formatted + " in stock!"
 
+    reply = "`" + ping_line + "`"
+
+    if unknown:
+        reply = reply + "\n\n_Ignored unknown: " + ", ".join(unknown) + "_"
+
+    await message.channel.send(reply)
 
 client.run(os.getenv("DISCORD_TOKEN"))
