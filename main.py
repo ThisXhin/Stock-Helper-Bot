@@ -127,24 +127,30 @@ async def on_message(message):
     content = message.content.strip()
     content_lower = content.lower()
 
-    # HELP – check FIRST
+    # HELP COMMAND - FIRST CHECK
     if content_lower.startswith("!s help") or content_lower.startswith("?stockping help"):
         if content_lower.startswith("!s"):
             prefix = "!s"
-            note = "No ping"
+            note = "Silent - no @everyone"
         else:
             prefix = "?stockping"
-            note = "Pings everyone"
+            note = "Announcement - pings @everyone"
 
-        lines = ["Stock Shortcuts (" + note + "):"]
-        for shortcut, full_name in sorted(ITEM_MAP.items()):
-            lines.append("`" + prefix + " " + shortcut + "` = " + full_name)
+        lines = ["**STOCK SHORTCUTS** (" + note + ")"]
         lines.append("")
-        lines.append("Or type the item name directly!")
+        lines.append("__**All Shortcuts:**__")
+        for shortcut, full_name in sorted(ITEM_MAP.items()):
+            lines.append("`" + prefix + " " + shortcut + "`  =  " + full_name)
+        lines.append("")
+        lines.append("__**Examples:**__")
+        lines.append("`" + prefix + " b1` = " + ITEM_MAP["b1"])
+        lines.append("`" + prefix + " b1, b2, t1` = multiple items")
+        lines.append("")
+        lines.append("You can also type part of the name: `" + prefix + " bamboo`")
         await message.channel.send("\n".join(lines))
         return
 
-    # STOCK – check after help
+    # STOCK COMMAND
     if content_lower.startswith("!s "):
         raw = content[3:].strip()
         should_ping = False
@@ -153,8 +159,6 @@ async def on_message(message):
         should_ping = True
     else:
         return
-
-    # ... rest of your code unchanged
 
     if not raw:
         await message.channel.send("Please type an item! Example: `!s bamboo`")
